@@ -58,22 +58,22 @@ export const languageSettings = createNewSettings<Language>(
     { primary: () => i18n.t('settings_language') },
 )
 
-const createProxiedSettings = (settingsKey: string) => {
+const createProxiedSettings = <T extends string>(settingsKey: string, initialValue: T) => {
     const target: {
-        [key: string]: ValueRef<string> & {
+        [key: string]: ValueRef<T> & {
             ready: boolean
-            readyPromise: Promise<string>
+            readyPromise: Promise<T>
         }
     } = {}
     MessageCenter.on('settingsCreated', (updatedKey) => {
         if (!(updatedKey in target)) {
-            target[updatedKey] = createNetworkSpecificSettings(updatedKey, settingsKey, '')
+            target[updatedKey] = createNetworkSpecificSettings<T>(updatedKey, settingsKey, initialValue)
         }
     })
     return new Proxy(target, {
         get(target, gettingKey: string) {
             if (!(gettingKey in target)) {
-                const settings = createNetworkSpecificSettings<string>(gettingKey, settingsKey, '')
+                const settings = createNetworkSpecificSettings<T>(gettingKey, settingsKey, initialValue)
                 target[gettingKey] = settings
                 settings.readyPromise.then(() => {
                     MessageCenter.emit('settingsCreated', gettingKey)
@@ -81,7 +81,7 @@ const createProxiedSettings = (settingsKey: string) => {
             }
             return target[gettingKey]
         },
-        set(target, settingKey: string, value: string) {
+        set(target, settingKey: string, value: T) {
             const obj = target[settingKey]
             obj.value = value
             return true
@@ -89,15 +89,15 @@ const createProxiedSettings = (settingsKey: string) => {
     })
 }
 
-export const currentImagePayloadStatus = createProxiedSettings('currentImagePayloadStatus')
+export const currentPayloadType = createProxiedSettings<'image' | 'text'>('currentPayloadType', 'text')
 
-export const currentSelectedIdentity = createProxiedSettings('currentSelectedIdentity')
+export const currentSelectedIdentity = createProxiedSettings<string>('currentSelectedIdentity', '')
 export type ImmersiveSetupCrossContextStatus = {
     status?: false | 'during'
     persona?: string
     username?: string
 }
-export const currentImmersiveSetupStatus = createProxiedSettings('currentImmersiveSetupStatus')
+export const currentImmersiveSetupStatus = createProxiedSettings<string>('currentImmersiveSetupStatus', '')
 export const currentImportingBackup = createNewSettings<boolean>('importingBackup', false, {
     primary: () => 'DO NOT DISPLAY IT IN UI',
 })
