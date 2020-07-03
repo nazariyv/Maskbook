@@ -88,7 +88,7 @@ const useStyles = makeStyles({
 })
 
 type PayloadType = 'image' | 'text'
-type RecipientType = 'unset' | 'anyone' | 'myself' | 'group_friends' | 'specific_friends'
+type RecipientType = 'anyone' | 'myself' | 'group_friends'
 
 export interface PostDialogUIProps
     extends withClasses<
@@ -176,13 +176,15 @@ export function PostDialogUI(props: PostDialogUIProps) {
         ...props.groups.map((group) => (
             <MenuItem
                 onClick={() => {
-                    props.onSetSelected([group])
+                    props.onSetSelected([...selectedRecipients, group])
                     props.onRecipientTypeChanged('group_friends')
                 }}>
                 {resolveSpecialGroupName(t, (group as any) as Group, props.profiles)}
             </MenuItem>
         )),
-        <MenuItem onClick={() => setSelectRecipientDialogOpen(true)}>
+        <MenuItem
+            disabled={props.recipientType === 'anyone' || props.recipientType === 'myself'}
+            onClick={() => setSelectRecipientDialogOpen(true)}>
             Specific Friends ({selectedRecipients.length} selected) <AddIcon />
         </MenuItem>,
     ]
@@ -194,10 +196,12 @@ export function PostDialogUI(props: PostDialogUIProps) {
                 return t('post_dialog__recipient_myself')
             case 'group_friends':
                 return t('post_dialog__recipient_group', {
-                    group: resolveSpecialGroupName(t, props.recipients[0] as Group, props.profiles),
+                    group: resolveSpecialGroupName(
+                        t,
+                        props.recipients.find((x) => isGroup(x)) as Group,
+                        props.profiles,
+                    ),
                 })
-            case 'specific_friends':
-                return t('post_dialog__recipient_specific_friends', { count: props.recipients.length })
             default:
                 return ''
         }
@@ -357,12 +361,10 @@ export function PostDialogUI(props: PostDialogUIProps) {
                 items={props.profiles}
                 selected={selectedRecipients}
                 disabledItems={[]}
-                disabled={false}
-                submitDisabled={false}
                 onSubmit={() => setSelectRecipientDialogOpen(false)}
                 onClose={() => setSelectRecipientDialogOpen(false)}
-                onSelect={(x) => props.onSetSelected([...selectedRecipients, x])}
-                onDeselect={(x) => props.onSetSelected(difference(selectedRecipients, [x]))}
+                onSelect={(x) => props.onSetSelected([...props.recipients, x])}
+                onDeselect={(x) => props.onSetSelected(difference(props.recipients, [x]))}
                 DialogProps={props.DialogProps}
                 {...props.SelectRecipientsDialogProps}
             />
@@ -402,7 +404,7 @@ export function PostDialog(props: PostDialogProps) {
     //#endregion
 
     //#region recipient type
-    const [recipientType, setRecipientType] = useState<RecipientType>('unset')
+    const [recipientType, setRecipientType] = useState<RecipientType>('anyone')
     const onlyMyself = recipientType === 'myself'
     const shareToEveryone = recipientType === 'anyone'
     //#endregion
@@ -481,7 +483,7 @@ export function PostDialog(props: PostDialogProps) {
         props.onRequestReset,
         useCallback(() => {
             setOpen(false)
-            setRecipientType('unset')
+            setRecipientType('anyone')
             setPostBoxContent(makeTypedMessage(''))
             setCurrentShareTarget([])
             getActivatedUI().typedMessageMetadata.value = new Map()

@@ -44,9 +44,7 @@ export interface SelectRecipientsDialogProps
     open: boolean
     items: Profile[]
     selected: Profile[]
-    disabled: boolean
     disabledItems?: Profile[]
-    submitDisabled: boolean
     onSubmit: () => void
     onClose: () => void
     onSelect: (item: Profile) => void
@@ -97,7 +95,7 @@ export function SelectRecipientsDialog(props: SelectRecipientsDialogProps) {
                                 props.selected.some((x) => x.identifier.equals(item.identifier)) ||
                                 disabledItems?.includes(item)
                             }
-                            disabled={props.disabled || disabledItems?.includes(item)}
+                            disabled={disabledItems?.includes(item)}
                             onChange={(_, checked) => {
                                 if (checked) {
                                     props.onSelect(item)
@@ -115,7 +113,7 @@ export function SelectRecipientsDialog(props: SelectRecipientsDialogProps) {
                     style={{ marginLeft: 'auto' }}
                     color="primary"
                     variant="contained"
-                    disabled={props.submitDisabled}
+                    disabled={!props.selected.length}
                     onClick={props.onSubmit}>
                     {t('select_specific_friends_dialog__button')}
                 </Button>

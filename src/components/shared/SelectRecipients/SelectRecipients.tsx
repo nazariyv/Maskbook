@@ -92,8 +92,6 @@ export function SelectRecipientsUI<T extends Group | Profile = Group | Profile>(
                 items={profileItems}
                 selected={profileItems.filter((x) => selected.includes(x))}
                 disabledItems={profileItems.filter((x) => selectedGroupMembers.includes(x.identifier.toText()))}
-                disabled={false}
-                submitDisabled={false}
                 onSubmit={() => setOpen(false)}
                 onClose={() => setOpen(false)}
                 onSelect={(item) => onSetSelected([...selected, item])}
