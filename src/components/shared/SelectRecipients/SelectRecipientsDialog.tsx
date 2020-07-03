@@ -113,7 +113,6 @@ export function SelectRecipientsDialog(props: SelectRecipientsDialogProps) {
                     style={{ marginLeft: 'auto' }}
                     color="primary"
                     variant="contained"
-                    disabled={!props.selected.length}
                     onClick={props.onSubmit}>
                     {t('select_specific_friends_dialog__button')}
                 </Button>

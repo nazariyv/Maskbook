@@ -340,6 +340,7 @@ export function PostDialogUI(props: PostDialogUIProps) {
                         onClose={() => setPayloadDropmenuOpen(false)}
                     />
                     <PostDialogDropdown
+                        title={t('post_dialog__recipient_menu_title')}
                         open={recipientDropmenuOpen}
                         anchorRef={recipientSwitchRef}
                         items={recipientDropmenuItems}

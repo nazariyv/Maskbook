@@ -1,12 +1,18 @@
 import React, { useEffect } from 'react'
-import { Popper, Paper, Grow, MenuList, PopperProps, makeStyles } from '@material-ui/core'
+import { Popper, Paper, Grow, MenuList, PopperProps, makeStyles, Typography, Theme } from '@material-ui/core'
 import { noop } from 'lodash-es'
 import { useStylesExtends } from '../custom-ui-helper'
 
-const useStyles = makeStyles({})
+const useStyles = makeStyles((theme: Theme) => ({
+    title: {
+        padding: theme.spacing(2),
+        fontWeight: 500,
+    },
+}))
 
 export interface PostDialogDropdownProps extends withClasses<KeysInferFromUseStyles<typeof useStyles>> {
     open: boolean
+    title?: string
     anchorRef: React.RefObject<HTMLElement | null>
     items?: JSX.Element[]
     onClose?: () => void
@@ -15,7 +21,7 @@ export interface PostDialogDropdownProps extends withClasses<KeysInferFromUseSty
 
 export function PostDialogDropdown(props: PostDialogDropdownProps) {
     const classes = useStylesExtends(useStyles(), props)
-    const { items = [], anchorRef, open, onClose = noop, PopperProps } = props
+    const { title, items = [], anchorRef, open, onClose = noop, PopperProps } = props
 
     const prevOpen = React.useRef(open)
     useEffect(() => {
@@ -30,10 +36,16 @@ export function PostDialogDropdown(props: PostDialogDropdownProps) {
                     {...TransitionProps}
                     style={{ transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom' }}>
                     <Paper>
-                        <MenuList autoFocusItem={open} onClick={onClose}>
+                        {props.title ? (
+                            <Typography className={classes.title} component="h5">
+                                {props.title}
+                            </Typography>
+                        ) : null}
+                        <MenuList disablePadding autoFocusItem={open}>
                             {items.map((item, index) =>
                                 React.cloneElement(item, {
                                     key: index,
+                                    onClick: onClose,
                                 }),
                             )}
                         </MenuList>
