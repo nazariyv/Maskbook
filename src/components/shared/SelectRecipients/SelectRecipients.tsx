@@ -7,7 +7,7 @@ import { ProfileIdentifier, GroupIdentifier } from '../../../database/type'
 import AddIcon from '@material-ui/icons/Add'
 import { ClickableChip } from './ClickableChip'
 import { useState } from 'react'
-import { SelectRecipientsDialogUIProps, SelectRecipientsDialogUI } from './SelectRecipientsDialog'
+import { SelectRecipientsDialogProps, SelectRecipientsDialog } from './SelectRecipientsDialog'
 import { useI18N } from '../../../utils/i18n-next-ui'
 import { difference } from 'lodash-es'
 import { useCurrentIdentity } from '../../DataSource/useActivatedUI'
@@ -32,7 +32,7 @@ export interface SelectRecipientsUIProps<T extends Group | Profile = Group | Pro
     onSetSelected(selected: T[]): void
     GroupInChipProps?: Partial<GroupInChipProps>
     PersonOrGroupInListProps?: Partial<PersonOrGroupInListProps>
-    SelectRecipientsDialogUIProps?: Partial<SelectRecipientsDialogUIProps>
+    SelectRecipientsDialogProps?: Partial<SelectRecipientsDialogProps>
     children?: React.ReactNode
 }
 
@@ -87,7 +87,7 @@ export function SelectRecipientsUI<T extends Group | Profile = Group | Profile>(
                     },
                 }}
             />
-            <SelectRecipientsDialogUI
+            <SelectRecipientsDialog
                 open={open}
                 items={profileItems}
                 selected={profileItems.filter((x) => selected.includes(x))}
@@ -98,7 +98,7 @@ export function SelectRecipientsUI<T extends Group | Profile = Group | Profile>(
                 onClose={() => setOpen(false)}
                 onSelect={(item) => onSetSelected([...selected, item])}
                 onDeselect={(item) => onSetSelected(difference(selected, [item]))}
-                {...props.SelectRecipientsDialogUIProps}
+                {...props.SelectRecipientsDialogProps}
             />
         </Box>
     )

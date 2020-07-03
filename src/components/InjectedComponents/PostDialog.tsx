@@ -1,5 +1,5 @@
 import React from 'react'
-import { useRef, useState, useMemo, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import {
     makeStyles,
     InputBase,
@@ -15,7 +15,6 @@ import {
     Theme,
     DialogProps,
     Tooltip,
-    Link,
     MenuItem,
     Divider,
 } from '@material-ui/core'
@@ -30,14 +29,12 @@ import { currentPayloadType } from '../shared-settings/settings'
 import { useValueRef } from '../../utils/hooks/useValueRef'
 import { getActivatedUI } from '../../social-network/ui'
 import Services from '../../extension/service'
-import { SelectRecipientsUIProps, isProfile } from '../shared/SelectRecipients/SelectRecipients'
 import { DialogDismissIconUI } from './DialogDismissIcon'
 import { ClickableChip } from '../shared/SelectRecipients/ClickableChip'
 import RedPacketDialog from '../../plugins/Wallet/UI/RedPacket/RedPacketDialog'
 import {
     makeTypedMessage,
     TypedMessage,
-    withMetadata,
     readTypedMessageMetadata,
     extractTextFromTypedMessage,
     withMetadataUntyped,
@@ -53,6 +50,10 @@ import { PluginUI } from '../../plugins/plugin'
 import { PostDialogDropdown } from './PostDialogDropdown'
 
 import { resolveSpecialGroupName } from '../shared/SelectPeopleAndGroups/resolveSpecialGroupName'
+import { SelectRecipientsDialog } from '../shared/SelectRecipients/SelectRecipientsDialog'
+import { difference } from 'lodash-es'
+import { ProfileIdentifier, GroupIdentifier } from '../../database/type'
+import type { JsxElement } from 'typescript'
 
 const defaultTheme = {}
 
@@ -110,20 +111,18 @@ export interface PostDialogUIProps
     open: boolean
     groups: Array<Group>
     profiles: Array<Profile>
-    currentShareTarget: Array<Profile | Group>
-    currentIdentity: Profile | null
+    recipients: Array<Profile | Group>
     postContent: TypedMessage
     postBoxButtonDisabled: boolean
     payloadType: PayloadType
     recipientType: RecipientType
+    onSetSelected: (selected: Array<Group | Profile>) => void
     onPostContentChanged: (nextMessage: TypedMessage) => void
     onPayloadTypeChanged: (type: PayloadType) => void
     onRecipientTypeChanged: (type: RecipientType) => void
-    onFinishButtonClicked: () => void
-    onCloseButtonClicked: () => void
-    onSetSelected: SelectRecipientsUIProps['onSetSelected']
+    onSubmit: () => void
+    onClose: () => void
     DialogProps?: Partial<DialogProps>
-    SelectRecipientsUIProps?: Partial<SelectRecipientsUIProps>
 }
 export function PostDialogUI(props: PostDialogUIProps) {
     const classes = useStylesExtends(useStyles(), props)
@@ -136,15 +135,25 @@ export function PostDialogUI(props: PostDialogUIProps) {
         },
         [props.open, props.postContent],
     )
+
+    //#region red packet dialog
     const [redPacketDialogOpen, setRedPacketDialogOpen] = useState(false)
+    //#endregion
+
+    //#region select recipient dialog
+    const [selectRecipientDialogOpen, setSelectRecipientDialogOpen] = useState(false)
+    const selectedRecipients = props.recipients.filter((x) => isProfile(x)) as Profile[]
+    //#endregion
 
     //#region payload type
     const payloadSwitchRef = useRef<HTMLButtonElement | null>(null)
     const [payloadDropmenuOpen, setPayloadDropmenuOpen] = useState(false)
     const payloadDropmenuItems = [
-        <MenuItem onClick={() => props.onPayloadTypeChanged('image')}>🖼️ Image Payload</MenuItem>,
+        webpackEnv.target !== 'WKWebview' && webpackEnv.firefoxVariant !== 'android' ? (
+            <MenuItem onClick={() => props.onPayloadTypeChanged('image')}>🖼️ Image Payload</MenuItem>
+        ) : null,
         <MenuItem onClick={() => props.onPayloadTypeChanged('text')}>📒 Text Payload</MenuItem>,
-    ]
+    ].filter(Boolean) as JSX.Element[]
     //#endregion
 
     //#region recipient type
@@ -162,8 +171,8 @@ export function PostDialogUI(props: PostDialogUIProps) {
                 {resolveSpecialGroupName(t, (group as any) as Group, props.profiles)}
             </MenuItem>
         )),
-        <MenuItem>
-            Specific Friends (0 selected) <AddIcon />
+        <MenuItem onClick={() => setSelectRecipientDialogOpen(true)}>
+            Specific Friends ({selectedRecipients.length} selected) <AddIcon />
         </MenuItem>,
     ]
     //#endregion
@@ -212,7 +221,7 @@ export function PostDialogUI(props: PostDialogUIProps) {
                     maxWidth="sm"
                     disableAutoFocus
                     disableEnforceFocus
-                    onEscapeKeyDown={props.onCloseButtonClicked}
+                    onEscapeKeyDown={props.onClose}
                     BackdropProps={{
                         className: classes.backdrop,
                     }}
@@ -221,14 +230,14 @@ export function PostDialogUI(props: PostDialogUIProps) {
                         <IconButton
                             classes={{ root: classes.close }}
                             aria-label={t('post_dialog__dismiss_aria')}
-                            onClick={props.onCloseButtonClicked}>
+                            onClick={props.onClose}>
                             <DialogDismissIconUI />
                         </IconButton>
                         <Typography className={classes.text} variant="inherit" component="div">
                             {t('post_dialog__title')}
                         </Typography>
                         <Button ref={payloadSwitchRef} variant="text" onClick={() => setPayloadDropmenuOpen((p) => !p)}>
-                            {props.payloadType === 'image' ? '🖼️  Image Payload' : '📒  Text Payload'}{' '}
+                            {props.payloadType === 'image' ? '🖼️  Image Payload' : '📒  Text Payload'}
                             <ArrowDropDownIcon />
                         </Button>
                     </DialogTitle>
@@ -279,7 +288,6 @@ export function PostDialogUI(props: PostDialogUIProps) {
                                 items={props.availableShareTarget}
                                 selected={props.currentShareTarget}
                                 onSetSelected={props.onSetSelected}
-                                {...props.SelectRecipientsUIProps}>
                                 <ClickableChip
                                     checked={props.shareToEveryone}
                                     ChipProps={{
@@ -337,7 +345,7 @@ export function PostDialogUI(props: PostDialogUIProps) {
                             color="primary"
                             variant="contained"
                             disabled={props.postBoxButtonDisabled}
-                            onClick={props.onFinishButtonClicked}>
+                            onClick={props.onSubmit}>
                             {t('post_dialog__button')}
                         </Button>
                     </DialogActions>
@@ -364,6 +372,19 @@ export function PostDialogUI(props: PostDialogUIProps) {
                     DialogProps={props.DialogProps}
                 />
             )}
+            <SelectRecipientsDialog
+                open={selectRecipientDialogOpen}
+                items={props.profiles}
+                selected={selectedRecipients}
+                disabledItems={[]}
+                disabled={false}
+                submitDisabled={false}
+                onSubmit={() => setSelectRecipientDialogOpen(false)}
+                onClose={() => setSelectRecipientDialogOpen(false)}
+                onSelect={(x) => props.onSetSelected([...selectedRecipients, x])}
+                onDeselect={(x) => props.onSetSelected(difference(selectedRecipients, [x]))}
+                DialogProps={props.DialogProps}
+            />
         </div>
     )
 }
@@ -372,6 +393,7 @@ export interface PostDialogProps extends Omit<Partial<PostDialogUIProps>, 'open'
     open?: [boolean, (next: boolean) => void]
     reason?: 'timeline' | 'popup'
     identities?: Profile[]
+    currentIdentity: Profile | null
     onRequestPost?: (target: (Profile | Group)[], content: TypedMessage) => void
     onRequestReset?: () => void
     typedMessageMetadata?: ReadonlyMap<string, any>
@@ -415,6 +437,7 @@ export function PostDialog(props: PostDialogProps) {
     )
     //#endregion
 
+    //#region callbacks
     const onRequestPost = or(
         props.onRequestPost,
         useCallback(
@@ -483,14 +506,15 @@ export function PostDialog(props: PostDialogProps) {
             getActivatedUI().typedMessageMetadata.value = new Map()
         }, [setOpen]),
     )
-    const onFinishButtonClicked = useCallback(() => {
+    const onSubmit = useCallback(() => {
         onRequestPost(onlyMyself ? [currentIdentity!] : currentShareTarget, postBoxContent)
         onRequestReset()
     }, [currentIdentity, currentShareTarget, onRequestPost, onRequestReset, onlyMyself, postBoxContent])
-    const onCloseButtonClicked = useCallback(() => {
+    const onClose = useCallback(() => {
         setOpen(false)
     }, [setOpen])
     //#endregion
+
     //#region My Identity
     const identities = useMyIdentities()
     useEffect(() => {
@@ -501,6 +525,7 @@ export function PostDialog(props: PostDialogProps) {
         })
     }, [identities.length, props.reason, setOpen])
     //#endregion
+
     //#region Red Packet
     // TODO: move into the plugin system
     const hasRedPacket = readTypedMessageMetadata(postBoxContent.meta, RedPacketMetaKey).ok
@@ -517,8 +542,7 @@ export function PostDialog(props: PostDialogProps) {
             theme={theme}
             groups={groups}
             profiles={profiles}
-            currentIdentity={currentIdentity}
-            currentShareTarget={currentShareTarget}
+            recipients={currentShareTarget}
             postContent={postBoxContent}
             postBoxButtonDisabled={
                 !(onlyMyself || shareToEveryone
@@ -531,8 +555,8 @@ export function PostDialog(props: PostDialogProps) {
             onPostContentChanged={setPostBoxContent}
             onPayloadTypeChanged={onPayloadTypeChanged}
             onRecipientTypeChanged={setRecipientType}
-            onFinishButtonClicked={onFinishButtonClicked}
-            onCloseButtonClicked={onCloseButtonClicked}
+            onSubmit={onSubmit}
+            onClose={onClose}
             {...props}
             open={open}
             classes={{ ...props.classes }}
@@ -542,4 +566,11 @@ export function PostDialog(props: PostDialogProps) {
 
 PostDialog.defaultProps = {
     reason: 'timeline',
+}
+
+export function isProfile(x: Profile | Group): x is Profile {
+    return x.identifier instanceof ProfileIdentifier
+}
+export function isGroup(x: Profile | Group): x is Group {
+    return x.identifier instanceof GroupIdentifier
 }

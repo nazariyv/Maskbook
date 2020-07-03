@@ -67,7 +67,7 @@ function PostDialogAtTwitter(props: { reason: 'timeline' | 'popup' }) {
             }}
             DialogProps={dialogProps}
             SelectRecipientsUIProps={{
-                SelectRecipientsDialogUIProps: {
+                SelectRecipientsDialogProps: {
                     classes: {
                         ...useTwitterDialog(),
                         ...useTwitterButton(),

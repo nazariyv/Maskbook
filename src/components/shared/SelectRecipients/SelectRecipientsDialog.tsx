@@ -11,6 +11,7 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    DialogProps,
 } from '@material-ui/core'
 import { useStylesExtends } from '../../custom-ui-helper'
 import { useI18N } from '../../../utils/i18n-next-ui'
@@ -28,7 +29,7 @@ const useStyles = makeStyles((theme) => ({
     },
 }))
 
-export interface SelectRecipientsDialogUIProps
+export interface SelectRecipientsDialogProps
     extends withClasses<
         | KeysInferFromUseStyles<typeof useStyles>
         | 'dialog'
@@ -50,8 +51,9 @@ export interface SelectRecipientsDialogUIProps
     onClose: () => void
     onSelect: (item: Profile) => void
     onDeselect: (item: Profile) => void
+    DialogProps?: Partial<DialogProps>
 }
-export function SelectRecipientsDialogUI(props: SelectRecipientsDialogUIProps) {
+export function SelectRecipientsDialog(props: SelectRecipientsDialogProps) {
     const { t } = useI18N()
     const classes = useStylesExtends(useStyles(), props)
     const { items, disabledItems } = props
@@ -72,7 +74,8 @@ export function SelectRecipientsDialogUI(props: SelectRecipientsDialogUIProps) {
             onEscapeKeyDown={props.onClose}
             BackdropProps={{
                 className: classes.backdrop,
-            }}>
+            }}
+            {...props.DialogProps}>
             <DialogTitle className={classes.header}>
                 <IconButton
                     classes={{ root: classes.close }}
