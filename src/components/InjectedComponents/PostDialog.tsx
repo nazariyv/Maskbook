@@ -50,7 +50,7 @@ import { PluginUI } from '../../plugins/plugin'
 import { PostDialogDropdown } from './PostDialogDropdown'
 
 import { resolveSpecialGroupName } from '../shared/SelectPeopleAndGroups/resolveSpecialGroupName'
-import { SelectRecipientsDialog } from '../shared/SelectRecipients/SelectRecipientsDialog'
+import { SelectRecipientsDialog, SelectRecipientsDialogProps } from '../shared/SelectRecipients/SelectRecipientsDialog'
 import { difference } from 'lodash-es'
 import { ProfileIdentifier, GroupIdentifier } from '../../database/type'
 import type { JsxElement } from 'typescript'
@@ -123,6 +123,7 @@ export interface PostDialogUIProps
     onSubmit: () => void
     onClose: () => void
     DialogProps?: Partial<DialogProps>
+    SelectRecipientsDialogProps?: Partial<SelectRecipientsDialogProps>
 }
 export function PostDialogUI(props: PostDialogUIProps) {
     const classes = useStylesExtends(useStyles(), props)
@@ -154,6 +155,16 @@ export function PostDialogUI(props: PostDialogUIProps) {
         ) : null,
         <MenuItem onClick={() => props.onPayloadTypeChanged('text')}>📒 Text Payload</MenuItem>,
     ].filter(Boolean) as JSX.Element[]
+    const resolvedPayloadTypeName = (() => {
+        switch (props.payloadType) {
+            case 'image':
+                return t('post_dialog__payload_menu_image')
+            case 'text':
+                return t('post_dialog__payload_menu_text')
+            default:
+                return ''
+        }
+    })()
     //#endregion
 
     //#region recipient type
@@ -165,8 +176,8 @@ export function PostDialogUI(props: PostDialogUIProps) {
         ...props.groups.map((group) => (
             <MenuItem
                 onClick={() => {
-                    props.onRecipientTypeChanged('group_friends')
                     props.onSetSelected([group])
+                    props.onRecipientTypeChanged('group_friends')
                 }}>
                 {resolveSpecialGroupName(t, (group as any) as Group, props.profiles)}
             </MenuItem>
@@ -175,6 +186,22 @@ export function PostDialogUI(props: PostDialogUIProps) {
             Specific Friends ({selectedRecipients.length} selected) <AddIcon />
         </MenuItem>,
     ]
+    const resolvedRecipientTypeName = (() => {
+        switch (props.recipientType) {
+            case 'anyone':
+                return t('post_dialog__recipient_anyone')
+            case 'myself':
+                return t('post_dialog__recipient_myself')
+            case 'group_friends':
+                return t('post_dialog__recipient_group', {
+                    group: resolveSpecialGroupName(t, props.recipients[0] as Group, props.profiles),
+                })
+            case 'specific_friends':
+                return t('post_dialog__recipient_specific_friends', { count: props.recipients.length })
+            default:
+                return ''
+        }
+    })()
     //#endregion
 
     const onDropmenuRootClick = (ev: React.MouseEvent<HTMLElement>) => {
@@ -237,7 +264,7 @@ export function PostDialogUI(props: PostDialogUIProps) {
                             {t('post_dialog__title')}
                         </Typography>
                         <Button ref={payloadSwitchRef} variant="text" onClick={() => setPayloadDropmenuOpen((p) => !p)}>
-                            {props.payloadType === 'image' ? '🖼️  Image Payload' : '📒  Text Payload'}
+                            {resolvedPayloadTypeName}
                             <ArrowDropDownIcon />
                         </Button>
                     </DialogTitle>
@@ -276,54 +303,7 @@ export function PostDialogUI(props: PostDialogUIProps) {
                                 />
                             )}
                         </Box>
-
                         <Divider />
-
-                        {/* <Typography style={{ marginBottom: 10 }}>
-                            {t('post_dialog__select_recipients_title')}
-                        </Typography>
-                        <Box style={{ marginBottom: 10 }} display="flex" flexWrap="wrap">
-                            <SelectRecipientsUI
-                                disabled={props.onlyMyself || props.shareToEveryone}
-                                items={props.availableShareTarget}
-                                selected={props.currentShareTarget}
-                                onSetSelected={props.onSetSelected}
-                                <ClickableChip
-                                    checked={props.shareToEveryone}
-                                    ChipProps={{
-                                        disabled: props.onlyMyself,
-                                        label: t('post_dialog__select_recipients_share_to_everyone'),
-                                        onClick: () => props.onShareToEveryoneChanged(!props.shareToEveryone),
-                                    }}
-                                />
-                                <ClickableChip
-                                    checked={props.onlyMyself}
-                                    ChipProps={{
-                                        disabled: props.shareToEveryone,
-                                        label: t('post_dialog__select_recipients_only_myself'),
-                                        onClick: () => props.onOnlyMyselfChanged(!props.onlyMyself),
-                                    }}
-                                />
-                            </SelectRecipientsUI>
-                        </Box> */}
-
-                        {/* This feature is not ready for mobile version */}
-                        {/* {webpackEnv.target !== 'WKWebview' && webpackEnv.firefoxVariant !== 'android' ? (
-                            <>
-                                <Typography style={{ marginBottom: 10 }}>
-                                    {t('post_dialog__more_options_title')}
-                                </Typography>
-                                <Box style={{ marginBottom: 10 }} display="flex" flexWrap="wrap">
-                                    <ClickableChip
-                                        checked={props.imagePayload}
-                                        ChipProps={{
-                                            label: t('post_dialog__image_payload'),
-                                            onClick: () => props.onImagePayloadSwitchChanged(!props.imagePayload),
-                                        }}
-                                    />
-                                </Box>
-                            </>
-                        ) : null} */}
                     </DialogContent>
                     <DialogActions className={classes.actions}>
                         <Box display="flex" flexDirection="column" alignItems="flex-start">
@@ -331,7 +311,7 @@ export function PostDialogUI(props: PostDialogUIProps) {
                                 ref={recipientSwitchRef}
                                 variant="text"
                                 onClick={() => setRecipientDropmenuOpen((p) => !p)}>
-                                Anyone on Maskbook can decrypt
+                                {resolvedRecipientTypeName}
                                 <ArrowDropDownIcon />
                             </Button>
                             {/* <Typography>
@@ -384,6 +364,7 @@ export function PostDialogUI(props: PostDialogUIProps) {
                 onSelect={(x) => props.onSetSelected([...selectedRecipients, x])}
                 onDeselect={(x) => props.onSetSelected(difference(selectedRecipients, [x]))}
                 DialogProps={props.DialogProps}
+                {...props.SelectRecipientsDialogProps}
             />
         </div>
     )
@@ -393,7 +374,7 @@ export interface PostDialogProps extends Omit<Partial<PostDialogUIProps>, 'open'
     open?: [boolean, (next: boolean) => void]
     reason?: 'timeline' | 'popup'
     identities?: Profile[]
-    currentIdentity: Profile | null
+    currentIdentity?: Profile | null
     onRequestPost?: (target: (Profile | Group)[], content: TypedMessage) => void
     onRequestReset?: () => void
     typedMessageMetadata?: ReadonlyMap<string, any>
