@@ -69,7 +69,7 @@ export default function DashboardContactsRouter() {
             </Typography>
             {/* without flex: 1, the auto resize cannot resize to the max height it need. */}
             <section style={{ flex: 1 }}>
-                <Suspense fallback={contactLineFallback}>
+                <Suspense fallback={isEmpty ? null : contactLineFallback}>
                     <ContactsList {...swr}></ContactsList>
                 </Suspense>
             </section>
