@@ -10,7 +10,7 @@ import type { WalletDetails, ERC20TokenDetails } from '../../extension/backgroun
 import { useValueRef } from '../../utils/hooks/useValueRef'
 
 const getWallets = () => Services.Plugin.getWallets()
-const getManagedWallets = Services.Plugin.getManagedWallets
+const getManagedWallet = Services.Plugin.getManagedWallet
 export function useWallet() {
     const swr = useSWR('query', {
         fetcher: getWallets,
@@ -28,7 +28,7 @@ export function useWallet() {
     }
 }
 export function useManagedWalletDetail(address: string | undefined) {
-    const swr = useSWR(address ?? null, { fetcher: getManagedWallets })
+    const swr = useSWR(address ?? null, { fetcher: getManagedWallet })
     const { revalidate } = swr
     useEffect(() => PluginMessageCenter.on('maskbook.wallets.update', revalidate), [revalidate])
     return swr
