@@ -6,16 +6,11 @@ import { formatBalance } from '../Wallet/formatter'
 import { ETH_ADDRESS } from '../Wallet/token'
 import { currentEthereumNetworkSettings } from '../../settings/settings'
 import useSWR from 'swr'
-import type {
-    WalletDetails,
-    ERC20TokenDetails,
-    getManagedWalletDetail,
-} from '../../extension/background-script/PluginService'
+import type { WalletDetails, ERC20TokenDetails } from '../../extension/background-script/PluginService'
 import { useValueRef } from '../../utils/hooks/useValueRef'
 
 const getWallets = () => Services.Plugin.getWallets()
-const getManagedWallets = (...args: Parameters<typeof getManagedWalletDetail>) =>
-    Services.Plugin.getManagedWalletDetail(...args)
+const getManagedWallets = Services.Plugin.getManagedWallets
 export function useWallet() {
     const swr = useSWR('query', {
         fetcher: getWallets,
@@ -28,7 +23,7 @@ export function useWallet() {
         wallets: data?.wallets,
         tokens: data?.tokens,
         requestConnectWallet: useCallback(() => {
-            Services.Welcome.openOptionsPage('/wallets/error?reason=nowallet')
+            Services.Welcome.openOptionsPage('/wallets?error=nowallet')
         }, []),
     }
 }
