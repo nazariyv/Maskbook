@@ -127,8 +127,6 @@ sideEffect.then(untilDocumentReady).then(() => {
     const network = getActivatedUI().networkIdentifier
     const id = currentImmersiveSetupStatus[network].value
     const onStatusUpdate = async (id: string) => {
-        console.log(`DEBUG: onStatusUpdate`)
-        console.log(`DEBUG: id: ${id} typeof id: ${typeof id}`)
         const stored = await browser.storage.local.get('facebook.com+currentImmersiveSetupStatus')
         console.log(stored)
         console.log(typeof stored)
