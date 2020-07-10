@@ -210,7 +210,7 @@ function Maskbook(_props: MaskbookProps) {
                             vertical: 'bottom',
                             horizontal: 'right',
                         }}>
-                        <span {..._props} />
+                        <span style={{ display: 'contents' }} {..._props} />
                     </SnackbarProvider>
                 </React.StrictMode>
             </I18nextProvider>
